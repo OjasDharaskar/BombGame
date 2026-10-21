@@ -29,7 +29,8 @@ public class LevelManager : MonoBehaviour
     [Header("Scenes Configuration")]
     [SerializeField] private string mainMenuScene = "MainMenu";
     [SerializeField] private string level1Scene = "Leve1";
-    [SerializeField] private string level2Scene = "Leve2";
+    [SerializeField] private string level2Scene = "Level2";
+    [SerializeField] private string level3Scene = "Level3";
 
     [Header("Settings")]
     [SerializeField] private float quickRestartDelay = 0.35f;
@@ -39,6 +40,7 @@ public class LevelManager : MonoBehaviour
     public string MainMenuScene => mainMenuScene;
     public string Level1Scene => level1Scene;
     public string Level2Scene => level2Scene;
+    public string Level3Scene => level3Scene;
 
     private void Awake()
     {
@@ -72,6 +74,11 @@ public class LevelManager : MonoBehaviour
         LoadScene(level2Scene);
     }
 
+    public void LoadLevel3()
+    {
+        LoadScene(level3Scene);
+    }
+
     public void LoadLevel(string sceneName)
     {
         LoadScene(sceneName);
@@ -84,14 +91,39 @@ public class LevelManager : MonoBehaviour
         {
             LoadLevel2();
         }
-        else if (current.Equals(level2Scene, System.StringComparison.OrdinalIgnoreCase) || current.Contains("2"))
+        else if (current.Equals(level2Scene, System.StringComparison.OrdinalIgnoreCase) 
+                 || current.Equals("Leve2", System.StringComparison.OrdinalIgnoreCase)
+                 || current.Contains("2"))
         {
-            LoadMainMenu();
+            LoadLevel3();
+        }
+        else if (current.Equals(level3Scene, System.StringComparison.OrdinalIgnoreCase) || current.Contains("3"))
+        {
+            // Level 3 is the final level - trigger Game Complete victory!
+            GameComplete();
         }
         else
         {
             LoadLevel1();
         }
+    }
+
+    public void GameComplete()
+    {
+        if (isTransitioning) return;
+        StartCoroutine(GameCompleteRoutine());
+    }
+
+    private IEnumerator GameCompleteRoutine()
+    {
+        isTransitioning = true;
+        if (GameHUD.Instance != null)
+        {
+            GameHUD.Instance.ShowMessage("VICTORY! ALL LEVELS COMPLETED!", 3.5f);
+        }
+        yield return new WaitForSeconds(3.0f);
+        SceneManager.LoadScene(mainMenuScene);
+        isTransitioning = false;
     }
 
     public void RestartCurrentLevel()
@@ -125,7 +157,18 @@ public class LevelManager : MonoBehaviour
     private void LoadScene(string sceneName)
     {
         if (isTransitioning) return;
-        StartCoroutine(LoadSceneRoutine(sceneName));
+        string resolved = ResolveSceneName(sceneName);
+        StartCoroutine(LoadSceneRoutine(resolved));
+    }
+
+    private string ResolveSceneName(string sceneName)
+    {
+        if (string.IsNullOrEmpty(sceneName)) return level1Scene;
+        if (sceneName.Equals("Leve2", System.StringComparison.OrdinalIgnoreCase))
+        {
+            return "Level2";
+        }
+        return sceneName;
     }
 
     private IEnumerator LoadSceneRoutine(string sceneName)

@@ -32,11 +32,23 @@ public class GameHUD : MonoBehaviour
     [SerializeField] private Vector2 bombBarPos = new Vector2(95f, -154f);
     [SerializeField] private Vector2 bombBarSize = new Vector2(117f, 27f);
 
+    public static GameHUD Instance { get; private set; }
+
+    private string bannerMessage = "";
+    private float bannerTimer = 0f;
+
+    public void ShowMessage(string message, float duration = 2.5f)
+    {
+        bannerMessage = message;
+        bannerTimer = duration;
+    }
+
     private Coroutine bombBarRoutine;
     private int lastHealth = -1;
 
     private void Awake()
     {
+        if (Instance == null) Instance = this;
         FindPlayer();
         EnsureSpritesLoaded();
         EnsureUIReferences();
@@ -45,6 +57,7 @@ public class GameHUD : MonoBehaviour
 
     private void Start()
     {
+        if (Instance == null) Instance = this;
         FindPlayer();
         EnsureUIReferences();
 
@@ -77,7 +90,8 @@ public class GameHUD : MonoBehaviour
         // Fail-safe player lookup
         if (player == null)
         {
-            FindPlayer();
+            if (Instance == null) Instance = this;
+        FindPlayer();
             if (player != null)
             {
                 player.OnHealthChanged += HandleHealthChanged;
@@ -108,6 +122,67 @@ public class GameHUD : MonoBehaviour
             ShowBombBarCharge(2.5f);
         }
 #endif
+    }
+
+    private void OnGUI()
+    {
+        if (bannerTimer > 0f)
+        {
+            bannerTimer -= Time.deltaTime;
+            if (bannerTimer <= 0f) bannerMessage = "";
+        }
+
+        string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        string levelTitle = "LEVEL 1";
+        if (sceneName.Contains("3") || sceneName.Equals("Level3", System.StringComparison.OrdinalIgnoreCase))
+            levelTitle = "LEVEL 3";
+        else if (sceneName.Contains("2") || sceneName.Equals("Level2", System.StringComparison.OrdinalIgnoreCase) || sceneName.Equals("Leve2", System.StringComparison.OrdinalIgnoreCase))
+            levelTitle = "LEVEL 2";
+
+        int aliveEnemies = EnemyAI.GetAliveEnemyCount();
+        string statusText = aliveEnemies > 0 
+            ? $"{levelTitle}  |  ENEMIES: {aliveEnemies}" 
+            : $"{levelTitle}  |  DOOR UNLOCKED!";
+
+        float screenW = Screen.width;
+        float headerW = 280f;
+        float headerH = 34f;
+        Rect headerRect = new Rect(screenW - headerW - 20f, 16f, headerW, headerH);
+
+        GUIStyle headerBg = new GUIStyle(GUI.skin.box);
+        Color oldColor = GUI.color;
+        GUI.color = new Color(0.08f, 0.08f, 0.12f, 0.85f);
+        GUI.Box(headerRect, GUIContent.none, headerBg);
+        GUI.color = oldColor;
+
+        GUIStyle headerStyle = new GUIStyle(GUI.skin.label);
+        headerStyle.fontSize = 15;
+        headerStyle.fontStyle = FontStyle.Bold;
+        headerStyle.alignment = TextAnchor.MiddleCenter;
+        headerStyle.normal.textColor = aliveEnemies > 0 
+            ? new Color(1f, 0.85f, 0.3f, 1f) 
+            : new Color(0.3f, 1f, 0.4f, 1f);
+
+        GUI.Label(headerRect, statusText, headerStyle);
+
+        if (!string.IsNullOrEmpty(bannerMessage) && bannerTimer > 0f)
+        {
+            float bannerW = Mathf.Min(600f, screenW * 0.9f);
+            float bannerH = 50f;
+            Rect bannerRect = new Rect((screenW - bannerW) * 0.5f, 75f, bannerW, bannerH);
+
+            GUI.color = new Color(0.05f, 0.05f, 0.08f, 0.95f);
+            GUI.Box(bannerRect, GUIContent.none, headerBg);
+            GUI.color = oldColor;
+
+            GUIStyle bannerStyle = new GUIStyle(GUI.skin.label);
+            bannerStyle.fontSize = 16;
+            bannerStyle.fontStyle = FontStyle.Bold;
+            bannerStyle.alignment = TextAnchor.MiddleCenter;
+            bannerStyle.normal.textColor = new Color(1f, 0.95f, 0.3f, 1f);
+
+            GUI.Label(bannerRect, bannerMessage, bannerStyle);
+        }
     }
 
     private void FindPlayer()

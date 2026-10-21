@@ -6806,6 +6806,35 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!1001 &850000001
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 100001, guid: 5a4d3e2b1c0f9e8d7c6b5a4f3e2d1c0b, type: 3}
+      propertyPath: m_Name
+      value: Door
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 5a4d3e2b1c0f9e8d7c6b5a4f3e2d1c0b, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 8.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 5a4d3e2b1c0f9e8d7c6b5a4f3e2d1c0b, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -2.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 5a4d3e2b1c0f9e8d7c6b5a4f3e2d1c0b, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 5a4d3e2b1c0f9e8d7c6b5a4f3e2d1c0b, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -6819,3 +6848,4 @@ SceneRoots:
   - {fileID: 717724271}
   - {fileID: 790697711}
   - {fileID: 1171787866}
+  - {fileID: 850000001}

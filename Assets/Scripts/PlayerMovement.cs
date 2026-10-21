@@ -163,6 +163,11 @@ public class PlayerMovement : MonoBehaviour, IDamageable
             LevelManager.Instance.LoadLevel2();
             return;
         }
+        if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
+        {
+            LevelManager.Instance.LoadLevel3();
+            return;
+        }
 
         if (isDead)
         {

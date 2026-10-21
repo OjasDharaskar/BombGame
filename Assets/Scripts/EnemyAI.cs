@@ -56,6 +56,22 @@ public class EnemyAI : MonoBehaviour, IDamageable
     public int CurrentHealth => currentHealth;
     public bool IsDead => isDead;
 
+    public static event System.Action<EnemyAI> OnAnyEnemyDied;
+
+    public static int GetAliveEnemyCount()
+    {
+        var enemies = Object.FindObjectsByType<EnemyAI>(FindObjectsInactive.Exclude);
+        int count = 0;
+        foreach (var enemy in enemies)
+        {
+            if (enemy != null && !enemy.isDead && enemy.gameObject.activeInHierarchy)
+            {
+                count++;
+            }
+        }
+        return count;
+    }
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -505,6 +521,8 @@ public class EnemyAI : MonoBehaviour, IDamageable
         {
             animator.SetTrigger("Dead");
         }
+
+        OnAnyEnemyDied?.Invoke(this);
 
         // Destroy after death animations complete
         Destroy(gameObject, 1.5f);
