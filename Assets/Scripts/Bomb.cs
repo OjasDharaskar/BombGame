@@ -14,6 +14,7 @@ public class Bomb : MonoBehaviour
     [SerializeField] private GameObject barContainer;
     [SerializeField] private Sprite[] chargingSprites;
     [SerializeField] private Sprite[] fullSprites;
+    [SerializeField] private Sprite closingSprite;
 
     [Header("References")]
     [SerializeField] private Rigidbody2D rb;
@@ -21,17 +22,21 @@ public class Bomb : MonoBehaviour
     [SerializeField] private Collider2D col;
 
     private float currentTimer;
+    private float elapsedTimer;
     private bool isExploded;
     private bool isSwallowed;
     private bool isHeld;
     private Transform holdParent;
     private Vector3 holdOffset = new Vector3(0f, 0.4f, 0f);
+    private Vector3 barLocalOffset = new Vector3(0f, 0.45f, 0f);
 
     public bool IsExploded => isExploded;
     public bool IsSwallowed => isSwallowed;
     public bool IsHeld => isHeld;
     public float CurrentTimer => currentTimer;
     public float FuseTime => fuseTime;
+    public float ElapsedTimer => elapsedTimer;
+    public float Progress => Mathf.Clamp01(elapsedTimer / fuseTime);
 
     private void Awake()
     {
@@ -43,6 +48,7 @@ public class Bomb : MonoBehaviour
 
     private void Start()
     {
+        elapsedTimer = 0f;
         UpdateBarSprite();
     }
 
@@ -63,6 +69,7 @@ public class Bomb : MonoBehaviour
             }
         }
 
+        elapsedTimer += Time.deltaTime;
         currentTimer -= Time.deltaTime;
         UpdateBarSprite();
 
@@ -72,21 +79,51 @@ public class Bomb : MonoBehaviour
         }
     }
 
+    private void LateUpdate()
+    {
+        if (barContainer != null && barContainer.activeSelf)
+        {
+            barContainer.transform.rotation = Quaternion.identity;
+            barContainer.transform.position = transform.position + barLocalOffset;
+        }
+    }
+
     private void UpdateBarSprite()
     {
-        if (barRenderer == null) return;
+        if (barRenderer == null || barContainer == null || !barContainer.activeSelf) return;
 
-        float progress = Mathf.Clamp01(1f - (currentTimer / fuseTime));
+        float chargeDuration = fuseTime * 0.72f;
+        float fullDuration = fuseTime * 0.88f;
+        float closeDuration = fuseTime * 0.95f;
 
-        if (progress >= 1f && fullSprites != null && fullSprites.Length > 0)
+        if (elapsedTimer < chargeDuration)
         {
-            int fIdx = Mathf.FloorToInt(Time.time * 10f) % fullSprites.Length;
-            barRenderer.sprite = fullSprites[fIdx];
+            if (chargingSprites != null && chargingSprites.Length > 0)
+            {
+                float t = Mathf.Clamp01(elapsedTimer / chargeDuration);
+                int index = Mathf.Clamp(Mathf.FloorToInt(t * chargingSprites.Length), 0, chargingSprites.Length - 1);
+                barRenderer.sprite = chargingSprites[index];
+            }
         }
-        else if (chargingSprites != null && chargingSprites.Length > 0)
+        else if (elapsedTimer < fullDuration)
         {
-            int index = Mathf.Clamp(Mathf.FloorToInt(progress * chargingSprites.Length), 0, chargingSprites.Length - 1);
-            barRenderer.sprite = chargingSprites[index];
+            if (fullSprites != null && fullSprites.Length > 0)
+            {
+                int fIdx = Mathf.FloorToInt(Time.time * 12f) % fullSprites.Length;
+                barRenderer.sprite = fullSprites[fIdx];
+            }
+        }
+        else if (elapsedTimer < closeDuration)
+        {
+            if (closingSprite != null)
+            {
+                barRenderer.sprite = closingSprite;
+            }
+        }
+        else
+        {
+            // Bar gets charged and then it disappears before explosion!
+            barContainer.SetActive(false);
         }
     }
 

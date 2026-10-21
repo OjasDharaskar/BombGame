@@ -38,9 +38,18 @@ public class PlayerMovement : MonoBehaviour, IDamageable
     private float nextThrowTime;
     private Vector3 baseScale;
 
+    // Jump buffer & coyote time for responsive jumping
+    private float coyoteTime = 0.12f;
+    private float coyoteTimer;
+    private float jumpBufferTime = 0.12f;
+    private float jumpBufferTimer;
+
     public int CurrentHealth => currentHealth;
     public int MaxHealth => maxHealth;
     public bool IsDead => isDead;
+
+    public event System.Action<int, int> OnHealthChanged;
+    public event System.Action<Bomb> OnBombThrown;
 
     private void Awake()
     {
@@ -50,12 +59,17 @@ public class PlayerMovement : MonoBehaviour, IDamageable
         col = GetComponent<Collider2D>();
         baseScale = transform.localScale;
         currentHealth = maxHealth;
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
 
-        // If groundLayer not configured, default to Ground and Default layers
+        // Ground Layer setup: make sure both Ground and Default layers are recognized
         if (groundLayer.value == 0)
         {
             groundLayer = LayerMask.GetMask("Ground", "Default");
-            if (groundLayer.value == 0) groundLayer = ~0; // fallback to everything except self
+            if (groundLayer.value == 0) groundLayer = ~0;
+        }
+        else
+        {
+            groundLayer |= LayerMask.GetMask("Default", "Ground");
         }
     }
 
@@ -69,10 +83,31 @@ public class PlayerMovement : MonoBehaviour, IDamageable
         // Ground Check
         CheckGrounded();
 
-        // Jump
-        if ((Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) && isGrounded)
+        // Coyote Timer
+        if (isGrounded)
+        {
+            coyoteTimer = coyoteTime;
+        }
+        else
+        {
+            coyoteTimer -= Time.deltaTime;
+        }
+
+        // Jump mapped EXCLUSIVELY to Spacebar
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            jumpBufferTimer = jumpBufferTime;
+        }
+        else
+        {
+            jumpBufferTimer -= Time.deltaTime;
+        }
+
+        if (jumpBufferTimer > 0f && coyoteTimer > 0f)
         {
             Jump();
+            jumpBufferTimer = 0f;
+            coyoteTimer = 0f;
         }
 
         // Shoot Bomb
@@ -108,14 +143,59 @@ public class PlayerMovement : MonoBehaviour, IDamageable
 
     private void CheckGrounded()
     {
-        Vector2 checkPos = groundCheckPoint != null ? (Vector2)groundCheckPoint.position : (Vector2)col.bounds.min + new Vector2(col.bounds.size.x * 0.5f, 0.05f);
-        Collider2D hit = Physics2D.OverlapBox(checkPos, groundCheckSize, 0f, groundLayer);
-        isGrounded = hit != null && hit.gameObject != gameObject;
+        if (col == null) col = GetComponent<Collider2D>();
+        if (col == null) return;
+
+        // Check area slightly below the bottom edge of the player's collider
+        float checkWidth = col.bounds.size.x * 0.75f;
+        float checkHeight = 0.12f;
+        Vector2 checkPos = groundCheckPoint != null 
+            ? (Vector2)groundCheckPoint.position 
+            : new Vector2(col.bounds.center.x, col.bounds.min.y - 0.04f);
+
+        Vector2 checkSize = groundCheckPoint != null ? groundCheckSize : new Vector2(checkWidth, checkHeight);
+
+        Collider2D[] hits = Physics2D.OverlapBoxAll(checkPos, checkSize, 0f, groundLayer);
+        bool grounded = false;
+        foreach (var h in hits)
+        {
+            if (h != null && h.gameObject != gameObject && !h.transform.IsChildOf(transform) && !h.isTrigger)
+            {
+                // Ignore enemy colliders and bomb colliders for ground standing
+                if (!h.CompareTag("Enemy") && !h.CompareTag("Bomb"))
+                {
+                    grounded = true;
+                    break;
+                }
+            }
+        }
+
+        // Fallback downward raycast for slopes and edge detection
+        if (!grounded)
+        {
+            Vector2 rayOrigin = new Vector2(col.bounds.center.x, col.bounds.min.y + 0.05f);
+            RaycastHit2D[] rayHits = Physics2D.RaycastAll(rayOrigin, Vector2.down, 0.18f, groundLayer);
+            foreach (var rh in rayHits)
+            {
+                if (rh.collider != null && rh.collider.gameObject != gameObject && !rh.collider.transform.IsChildOf(transform) && !rh.collider.isTrigger)
+                {
+                    if (!rh.collider.CompareTag("Enemy") && !rh.collider.CompareTag("Bomb"))
+                    {
+                        grounded = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        isGrounded = grounded;
     }
 
     private void Jump()
     {
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+        isGrounded = false;
+        coyoteTimer = 0f;
     }
 
     private void Flip()
@@ -140,6 +220,8 @@ public class PlayerMovement : MonoBehaviour, IDamageable
             Vector2 throwVelocity = new Vector2(dirX * throwForceX, throwForceY);
             bomb.Throw(throwVelocity.normalized, throwVelocity.magnitude);
         }
+
+        OnBombThrown?.Invoke(bomb);
     }
 
     private void UpdateAnimator()
@@ -150,11 +232,56 @@ public class PlayerMovement : MonoBehaviour, IDamageable
         animator.SetBool("IsGrounded", isGrounded);
     }
 
+    // ==========================================
+    // ENEMY CONTACT & COLLISION DAMAGE
+    // ==========================================
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        HandleEnemyContact(collision.collider);
+    }
+
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        HandleEnemyContact(collision.collider);
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        HandleEnemyContact(other);
+    }
+
+    private void OnTriggerStay2D(Collider2D other)
+    {
+        HandleEnemyContact(other);
+    }
+
+    private void HandleEnemyContact(Collider2D other)
+    {
+        if (isDead || isInvulnerable) return;
+
+        // Check if other is an enemy
+        if (other.CompareTag("Enemy") || other.GetComponent<EnemyAI>() != null || other.GetComponentInParent<EnemyAI>() != null)
+        {
+            EnemyAI enemy = other.GetComponent<EnemyAI>();
+            if (enemy == null) enemy = other.GetComponentInParent<EnemyAI>();
+
+            if (enemy != null && enemy.IsDead) return;
+
+            // Knockback away from enemy
+            Vector2 dir = (transform.position - other.transform.position).normalized;
+            if (dir.sqrMagnitude < 0.001f) dir = (isFacingRight ? Vector2.left : Vector2.right) + Vector2.up;
+            dir.y = Mathf.Max(0.5f, dir.y);
+
+            TakeDamage(1, dir.normalized * 7.5f);
+        }
+    }
+
     public void TakeDamage(int damage, Vector2 knockback)
     {
         if (isDead || isInvulnerable) return;
 
         currentHealth -= damage;
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
 
         if (animator != null)
         {
@@ -172,6 +299,13 @@ public class PlayerMovement : MonoBehaviour, IDamageable
         {
             StartCoroutine(InvulnerabilityRoutine());
         }
+    }
+
+    public void Heal(int amount)
+    {
+        if (isDead) return;
+        currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
     }
 
     private IEnumerator InvulnerabilityRoutine()
@@ -209,8 +343,13 @@ public class PlayerMovement : MonoBehaviour, IDamageable
         if (col != null)
         {
             Gizmos.color = Color.green;
-            Vector2 checkPos = groundCheckPoint != null ? (Vector2)groundCheckPoint.position : (Vector2)col.bounds.min + new Vector2(col.bounds.size.x * 0.5f, 0.05f);
-            Gizmos.DrawWireCube(checkPos, groundCheckSize);
+            Vector2 checkPos = groundCheckPoint != null 
+                ? (Vector2)groundCheckPoint.position 
+                : new Vector2(col.bounds.center.x, col.bounds.min.y - 0.04f);
+            Vector2 checkSize = groundCheckPoint != null 
+                ? groundCheckSize 
+                : new Vector2(col.bounds.size.x * 0.75f, 0.12f);
+            Gizmos.DrawWireCube(checkPos, checkSize);
         }
     }
 }

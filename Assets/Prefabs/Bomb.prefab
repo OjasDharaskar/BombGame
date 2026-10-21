@@ -306,6 +306,7 @@ MonoBehaviour:
   - {fileID: -855298285791758126, guid: ea50964c62beef342aece1478566a0bb, type: 3}
   - {fileID: 6937817954938267909, guid: bdf03a3e0bae17848a928c5868276e65, type: 3}
   - {fileID: -6470460504253458178, guid: 6c22bdbab33d7fd4ea7a1c3aebf81290, type: 3}
+  closingSprite: {fileID: -855298285791758126, guid: c8209449055c805408adf13f99c45158, type: 3}
   rb: {fileID: 7474182693885537182}
   animator: {fileID: 8097323862579268392}
   col: {fileID: 554236284491533864}
