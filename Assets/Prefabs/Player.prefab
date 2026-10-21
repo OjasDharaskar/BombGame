@@ -207,3 +207,13 @@ MonoBehaviour:
   throwCooldown: 0.5
   maxHealth: 3
   invulnerabilityDuration: 1.2
+  walkSound: {fileID: 8300000, guid: 2da88aff91b1d8344906c94d914f0e8c, type: 3}
+  jumpSound: {fileID: 8300000, guid: 5444ce1b34d1d7043b78f33a25025a65, type: 3}
+  hurtSound: {fileID: 8300000, guid: f80222a9521064c47a452d43395a3ec7, type: 3}
+  deathSound: {fileID: 8300000, guid: 96d8e4ed51d4315449bfdc62e10c0741, type: 3}
+  fallSound: {fileID: 8300000, guid: d685c0d4605270f47af76a49cc16d6af, type: 3}
+  stepInterval: 0.32
+  fallBoundaryY: -6.5
+  audioSource: {fileID: 0}
+  footstepSource: {fileID: 0}
+  restartDelay: 0.35

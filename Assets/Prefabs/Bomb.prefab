@@ -288,6 +288,8 @@ MonoBehaviour:
   explosionRadius: 1.6
   explosionDamage: 1
   explosionKnockback: 7
+  explosionSound: {fileID: 8300000, guid: 3709dbb1e3e11a74eb034d7f7090234e, type: 3}
+  playAudioOnInitiated: 1
   barRenderer: {fileID: 3626264332828710153}
   barContainer: {fileID: 1318347059701231936}
   chargingSprites:

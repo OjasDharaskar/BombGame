@@ -9,6 +9,10 @@ public class Bomb : MonoBehaviour
     [SerializeField] private int explosionDamage = 1;
     [SerializeField] private float explosionKnockback = 7f;
 
+    [Header("Audio Settings")]
+    [SerializeField] private AudioClip explosionSound;
+    [SerializeField] private bool playAudioOnInitiated = true;
+
     [Header("Bomb Bar Sprites")]
     [SerializeField] private SpriteRenderer barRenderer;
     [SerializeField] private GameObject barContainer;
@@ -44,6 +48,13 @@ public class Bomb : MonoBehaviour
         if (animator == null) animator = GetComponent<Animator>();
         if (col == null) col = GetComponent<Collider2D>();
         currentTimer = fuseTime;
+
+#if UNITY_EDITOR
+        if (explosionSound == null)
+        {
+            explosionSound = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Sounds/OGG/01_Explosion_v1.ogg");
+        }
+#endif
     }
 
     private void Start()
@@ -221,12 +232,34 @@ public class Bomb : MonoBehaviour
         Destroy(gameObject);
     }
 
+    public void OnInitiated()
+    {
+        if (playAudioOnInitiated)
+        {
+            PlayExplosionSound();
+        }
+    }
+
+    private void PlayExplosionSound()
+    {
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlayExplosion(transform.position);
+        }
+        else if (explosionSound != null)
+        {
+            AudioSource.PlayClipAtPoint(explosionSound, transform.position);
+        }
+    }
+
     public void Explode()
     {
         if (isExploded || isSwallowed) return;
 
         isExploded = true;
         if (isHeld) Drop();
+
+        PlayExplosionSound();
 
         if (barContainer != null) barContainer.SetActive(false);
         else if (barRenderer != null) barRenderer.gameObject.SetActive(false);

@@ -93,13 +93,13 @@ public class GameHUD : MonoBehaviour
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         // Debug testing hotkeys:
         // H = take 1 damage (hearts reduce)
-        // R = heal 1 health
+        // T = heal 1 health
         // B = trigger bomb bar charge and disappear
         if (Input.GetKeyDown(KeyCode.H) && player != null)
         {
             player.TakeDamage(1, Vector2.zero);
         }
-        else if (Input.GetKeyDown(KeyCode.R) && player != null)
+        else if (Input.GetKeyDown(KeyCode.T) && player != null)
         {
             player.Heal(1);
         }
