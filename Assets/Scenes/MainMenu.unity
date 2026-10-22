@@ -428,6 +428,7 @@ MonoBehaviour:
   level1Scene: Leve1
   level2Scene: Leve2
   level3Scene: Level3
+  level4Scene: Level4
   quickRestartDelay: 0.35
 --- !u!4 &1903847202
 Transform:

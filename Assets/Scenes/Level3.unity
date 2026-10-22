@@ -1445,6 +1445,9 @@ MonoBehaviour:
   platformTileSprite: {fileID: 470266916, guid: 20e34363253237a40869b5bfe34b0676, type: 3}
   mediumSpeedX: 2.2
   mediumSpeedY: 2
+  platformLeftDistance: 2.6
+  platformBottomRightDistance: 3.2
+  platformTopRightDistance: 5.2
   platformLeft: {fileID: 0}
   platformBottomRight: {fileID: 0}
   platformTopRight: {fileID: 0}

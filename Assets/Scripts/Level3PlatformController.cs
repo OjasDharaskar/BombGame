@@ -15,6 +15,11 @@ public class Level3PlatformController : MonoBehaviour
     [SerializeField] private float mediumSpeedX = 2.2f;
     [SerializeField] private float mediumSpeedY = 2.0f;
 
+    [Header("Platform Range / Distance Settings")]
+    [SerializeField] private float platformLeftDistance = 2.6f;
+    [SerializeField] private float platformBottomRightDistance = 3.2f;
+    [SerializeField] private float platformTopRightDistance = 5.2f;
+
     [Header("Spawned Platforms (Read-Only)")]
     [SerializeField] private MovingPlatform platformLeft;
     [SerializeField] private MovingPlatform platformBottomRight;
@@ -126,9 +131,13 @@ public class Level3PlatformController : MonoBehaviour
                 position: new Vector3(-3.45f, -1.23f, 0f),
                 blockCount: 3,
                 direction: Vector2.right,
-                distance: 2.6f,
+                distance: platformLeftDistance,
                 speed: mediumSpeedX
             );
+        }
+        else
+        {
+            platformLeft.Initialize(Vector2.right, platformLeftDistance, mediumSpeedX);
         }
 
         // Platform 2: Bottom-Right platform (2 blocks wide, moves in Y direction)
@@ -139,9 +148,13 @@ public class Level3PlatformController : MonoBehaviour
                 position: new Vector3(3.05f, -2.23f, 0f),
                 blockCount: 2,
                 direction: Vector2.up,
-                distance: 2.4f,
+                distance: platformBottomRightDistance,
                 speed: mediumSpeedY
             );
+        }
+        else
+        {
+            platformBottomRight.Initialize(Vector2.up, platformBottomRightDistance, mediumSpeedY);
         }
 
         // Platform 3: Top-Right platform (2 blocks wide, moves in X direction)
@@ -152,9 +165,13 @@ public class Level3PlatformController : MonoBehaviour
                 position: new Vector3(4.05f, 2.77f, 0f),
                 blockCount: 2,
                 direction: Vector2.left,
-                distance: 2.5f,
+                distance: platformTopRightDistance,
                 speed: mediumSpeedX
             );
+        }
+        else
+        {
+            platformTopRight.Initialize(Vector2.left, platformTopRightDistance, mediumSpeedX);
         }
     }
 

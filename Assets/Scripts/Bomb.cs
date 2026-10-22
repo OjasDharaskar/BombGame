@@ -30,6 +30,7 @@ public class Bomb : MonoBehaviour
     private bool isExploded;
     private bool isSwallowed;
     private bool isHeld;
+    private bool isExtinguished;
     private Transform holdParent;
     private Vector3 holdOffset = new Vector3(0f, 0.4f, 0f);
     private Vector3 barLocalOffset = new Vector3(0f, 0.45f, 0f);
@@ -37,6 +38,7 @@ public class Bomb : MonoBehaviour
     public bool IsExploded => isExploded;
     public bool IsSwallowed => isSwallowed;
     public bool IsHeld => isHeld;
+    public bool IsExtinguished => isExtinguished;
     public float CurrentTimer => currentTimer;
     public float FuseTime => fuseTime;
     public float ElapsedTimer => elapsedTimer;
@@ -65,7 +67,7 @@ public class Bomb : MonoBehaviour
 
     private void Update()
     {
-        if (isExploded || isSwallowed) return;
+        if (isExploded || isSwallowed || isExtinguished) return;
 
         if (isHeld)
         {
@@ -140,7 +142,7 @@ public class Bomb : MonoBehaviour
 
     public void Kick(Vector2 direction, float force)
     {
-        if (isExploded || isSwallowed) return;
+        if (isExploded || isSwallowed || isExtinguished) return;
 
         if (isHeld) Drop();
 
@@ -156,7 +158,7 @@ public class Bomb : MonoBehaviour
 
     public void PickUp(Transform holder, Vector3 offset)
     {
-        if (isExploded || isSwallowed) return;
+        if (isExploded || isSwallowed || isExtinguished) return;
 
         isHeld = true;
         holdParent = holder;
@@ -182,7 +184,7 @@ public class Bomb : MonoBehaviour
 
     public void Throw(Vector2 direction, float force)
     {
-        if (isExploded || isSwallowed) return;
+        if (isExploded || isSwallowed || isExtinguished) return;
 
         isHeld = false;
         holdParent = null;
@@ -198,7 +200,7 @@ public class Bomb : MonoBehaviour
 
     public void Swallow()
     {
-        if (isExploded || isSwallowed) return;
+        if (isExploded || isSwallowed || isExtinguished) return;
 
         isSwallowed = true;
         if (isHeld) Drop();
@@ -232,6 +234,58 @@ public class Bomb : MonoBehaviour
         Destroy(gameObject);
     }
 
+    public void Extinguish()
+    {
+        if (isExploded || isSwallowed || isExtinguished) return;
+
+        isExtinguished = true;
+        if (isHeld) Drop();
+
+        if (barContainer != null) barContainer.SetActive(false);
+        else if (barRenderer != null) barRenderer.gameObject.SetActive(false);
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector2.zero;
+        }
+
+        if (col != null) col.enabled = false;
+
+        StartCoroutine(ExtinguishRoutine());
+    }
+
+    private IEnumerator ExtinguishRoutine()
+    {
+        AudioClip extinguishSound = null;
+#if UNITY_EDITOR
+        extinguishSound = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Sounds/OGG/01_Power down_v1.ogg");
+#endif
+        if (extinguishSound != null)
+        {
+            AudioSource.PlayClipAtPoint(extinguishSound, transform.position);
+        }
+
+        SpriteRenderer sr = GetComponent<SpriteRenderer>();
+        float duration = 0.45f;
+        float elapsed = 0f;
+        Color initColor = sr != null ? sr.color : Color.white;
+        Vector3 initScale = transform.localScale;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            if (sr != null)
+            {
+                sr.color = new Color(initColor.r, initColor.g, initColor.b, Mathf.Lerp(1f, 0f, t));
+            }
+            transform.localScale = Vector3.Lerp(initScale, initScale * 0.7f, t);
+            yield return null;
+        }
+
+        Destroy(gameObject);
+    }
+
     public void OnInitiated()
     {
         if (playAudioOnInitiated)
@@ -254,7 +308,7 @@ public class Bomb : MonoBehaviour
 
     public void Explode()
     {
-        if (isExploded || isSwallowed) return;
+        if (isExploded || isSwallowed || isExtinguished) return;
 
         isExploded = true;
         if (isHeld) Drop();

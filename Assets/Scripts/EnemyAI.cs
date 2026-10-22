@@ -49,6 +49,8 @@ public class EnemyAI : MonoBehaviour, IDamageable
     private bool isScared;
     private float calmTimer;
     private bool isHandlingBomb;
+    private float lastTurnTime;
+    private const float MIN_TURN_COOLDOWN = 0.35f;
 
     // Cached references
     private Transform playerTransform;
@@ -244,7 +246,7 @@ public class EnemyAI : MonoBehaviour, IDamageable
     private void CheckLedgeAndWall()
     {
         // Don't turn around if airborne
-        if (!isGrounded) return;
+        if (!isGrounded || col == null) return;
 
         // Wall check ahead
         float dir = movingRight ? 1f : -1f;
@@ -257,12 +259,28 @@ public class EnemyAI : MonoBehaviour, IDamageable
 
         if (wallHit.collider != null || ledgeHit.collider == null)
         {
-            FlipDirection();
+            // If facing the player across a ledge/wall, stand at the edge and idle instead of rapid flipping
+            if (playerTransform != null && Vector2.Distance(transform.position, playerTransform.position) <= detectionRange)
+            {
+                bool playerIsAhead = (playerTransform.position.x > transform.position.x) == movingRight;
+                if (playerIsAhead)
+                {
+                    rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+                    if (animator != null) animator.SetBool("IsRunning", false);
+                    return;
+                }
+            }
+
+            if (Time.time >= lastTurnTime + MIN_TURN_COOLDOWN)
+            {
+                FlipDirection();
+            }
         }
     }
 
     private void FlipDirection()
     {
+        lastTurnTime = Time.time;
         movingRight = !movingRight;
         transform.localScale = new Vector3((movingRight ? 1f : -1f) * Mathf.Abs(baseScale.x), baseScale.y, baseScale.z);
     }
@@ -272,8 +290,33 @@ public class EnemyAI : MonoBehaviour, IDamageable
         bool targetIsRight = targetPos.x > transform.position.x;
         if (targetIsRight != movingRight)
         {
-            FlipDirection();
+            // If turning would face a wall or drop-off where movement is blocked anyway, do not turn
+            if (!CanSafelyWalk(targetIsRight))
+            {
+                return;
+            }
+
+            if (Time.time >= lastTurnTime + MIN_TURN_COOLDOWN)
+            {
+                FlipDirection();
+            }
         }
+    }
+
+    private bool CanSafelyWalk(bool faceRight)
+    {
+        if (!isGrounded || col == null) return true;
+        float dir = faceRight ? 1f : -1f;
+
+        Vector2 wallOrigin = new Vector2(col.bounds.center.x, col.bounds.center.y);
+        RaycastHit2D wallHit = Physics2D.Raycast(wallOrigin, Vector2.right * dir, col.bounds.extents.x + 0.2f, groundLayer);
+        if (wallHit.collider != null) return false;
+
+        Vector2 ledgeOrigin = new Vector2(col.bounds.center.x + dir * (col.bounds.extents.x + 0.15f), col.bounds.min.y + 0.1f);
+        RaycastHit2D ledgeHit = Physics2D.Raycast(ledgeOrigin, Vector2.down, 0.5f, groundLayer);
+        if (ledgeHit.collider == null) return false;
+
+        return true;
     }
 
     private Bomb FindClosestBomb(float range)
@@ -284,7 +327,7 @@ public class EnemyAI : MonoBehaviour, IDamageable
 
         foreach (var b in bombs)
         {
-            if (b == null || b.IsExploded || b.IsSwallowed || b.IsHeld) continue;
+            if (b == null || b.IsExploded || b.IsSwallowed || b.IsHeld || b.IsExtinguished) continue;
             float dist = Vector2.Distance(transform.position, b.transform.position);
             if (dist < minDist)
             {
@@ -381,33 +424,79 @@ public class EnemyAI : MonoBehaviour, IDamageable
     }
 
     // ==============================================================
-    // 3. CUCUMBER: bites the player, requires 2 bombs to kill
+    // 3. CUCUMBER: blows out bomb wick, bites player, requires 2 bombs to kill
     // ==============================================================
     private void UpdateCucumber()
     {
-        if (playerTransform == null) return;
+        if (isHandlingBomb) return;
 
-        float distToPlayer = Vector2.Distance(transform.position, playerTransform.position);
-
-        // If player is close, turn towards player
-        if (distToPlayer <= detectionRange)
+        // 1. Check for bomb to extinguish (blow the wick)
+        Bomb bomb = FindClosestBomb(actionRange + 0.35f);
+        if (bomb != null && !bomb.IsExploded && !bomb.IsSwallowed && !bomb.IsExtinguished && Time.time >= nextActionTime)
         {
-            FaceTarget(playerTransform.position);
+            nextActionTime = Time.time + attackCooldown;
+            StartCoroutine(CucumberBlowWickRoutine(bomb));
+            return;
+        }
 
-            if (distToPlayer <= actionRange && Time.time >= nextActionTime)
+        // 2. Check for player to chase / bite
+        if (playerTransform != null)
+        {
+            float distToPlayer = Vector2.Distance(transform.position, playerTransform.position);
+
+            if (distToPlayer <= detectionRange)
             {
-                nextActionTime = Time.time + attackCooldown;
-                StartCoroutine(CucumberBiteRoutine());
+                FaceTarget(playerTransform.position);
+
+                if (distToPlayer <= actionRange && Time.time >= nextActionTime)
+                {
+                    nextActionTime = Time.time + attackCooldown;
+                    StartCoroutine(CucumberBiteRoutine());
+                }
             }
         }
     }
 
+    private IEnumerator CucumberBlowWickRoutine(Bomb bomb)
+    {
+        isHandlingBomb = true;
+        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+        if (animator != null)
+        {
+            animator.SetBool("IsRunning", false);
+            animator.SetTrigger("BlowWick");
+        }
+
+        FaceTarget(bomb.transform.position);
+
+        // BlowWick animation is 11 frames @ 12fps = 0.916s duration
+        // Wick blows out around frame 6 (~0.45s)
+        yield return new WaitForSeconds(0.45f);
+
+        if (bomb != null && !bomb.IsExploded && !bomb.IsSwallowed && !bomb.IsExtinguished)
+        {
+            bomb.Extinguish();
+        }
+
+        yield return new WaitForSeconds(0.45f);
+        isHandlingBomb = false;
+    }
+
     private IEnumerator CucumberBiteRoutine()
     {
-        if (animator != null) animator.SetTrigger("Bite");
-        yield return new WaitForSeconds(0.25f);
+        isHandlingBomb = true;
+        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+        if (animator != null)
+        {
+            animator.SetBool("IsRunning", false);
+            animator.SetTrigger("Bite");
+        }
 
-        if (playerTransform != null && Vector2.Distance(transform.position, playerTransform.position) <= actionRange + 0.3f)
+        // Bite animation is 11 frames @ 14fps = 0.785s duration
+        // Bite connects at ~0.28s
+        yield return new WaitForSeconds(0.28f);
+
+        if (playerTransform != null && Vector2.Distance(transform.position, playerTransform.position) <= actionRange + 0.4f)
         {
             var damageable = playerTransform.GetComponent<IDamageable>();
             if (damageable != null)
@@ -416,6 +505,9 @@ public class EnemyAI : MonoBehaviour, IDamageable
                 damageable.TakeDamage(1, knockback);
             }
         }
+
+        yield return new WaitForSeconds(0.5f);
+        isHandlingBomb = false;
     }
 
     // =========================================================================
@@ -555,6 +647,18 @@ public class EnemyAI : MonoBehaviour, IDamageable
         {
             Die();
         }
+        else
+        {
+            StartCoroutine(HitStunRoutine(0.35f));
+        }
+    }
+
+    private IEnumerator HitStunRoutine(float duration)
+    {
+        isHandlingBomb = true;
+        if (animator != null) animator.SetBool("IsRunning", false);
+        yield return new WaitForSeconds(duration);
+        isHandlingBomb = false;
     }
 
     private void Die()
