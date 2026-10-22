@@ -29,6 +29,7 @@ public class EnemyAI : MonoBehaviour, IDamageable
 
     [Header("Fall Damage (Whale)")]
     [SerializeField] private float lethalFallSpeed = -6.5f;
+    [SerializeField] private float mapFallBoundaryY = -7.2f;
 
     // Components
     private Rigidbody2D rb;
@@ -82,7 +83,13 @@ public class EnemyAI : MonoBehaviour, IDamageable
 
         ConfigureEnemyDefaults();
 
-        if (groundLayer.value == 0) groundLayer = LayerMask.GetMask("Ground", "Default");
+        string currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        if (currentScene.Contains("4") || currentScene.Equals("Level4", System.StringComparison.OrdinalIgnoreCase))
+        {
+            mapFallBoundaryY = -24.0f;
+        }
+
+        groundLayer |= LayerMask.GetMask("Default", "Ground");
         if (bombLayer.value == 0) bombLayer = LayerMask.GetMask("Bomb", "Default");
         if (playerLayer.value == 0) playerLayer = LayerMask.GetMask("Player", "Default");
     }
@@ -134,6 +141,9 @@ public class EnemyAI : MonoBehaviour, IDamageable
     {
         if (isDead) return;
 
+        CheckWindowAndMapFall();
+        if (isDead) return;
+
         CheckGroundAndFallDamage();
 
         if (isHandlingBomb) return;
@@ -174,6 +184,42 @@ public class EnemyAI : MonoBehaviour, IDamageable
 
         // Ledge & Wall checking for patrol
         CheckLedgeAndWall();
+    }
+
+    private void CheckWindowAndMapFall()
+    {
+        if (isDead) return;
+
+        bool fallen = false;
+
+        // 1. Map window bottom boundary check
+        if (transform.position.y < mapFallBoundaryY)
+        {
+            fallen = true;
+        }
+
+        // 2. Camera window boundary check
+        if (!fallen && Camera.main != null)
+        {
+            Camera cam = Camera.main;
+            Vector3 vp = cam.WorldToViewportPoint(transform.position);
+
+            // If enemy falls below the bottom edge of the camera view window
+            if (vp.y < -0.05f)
+            {
+                fallen = true;
+            }
+            // If enemy falls beyond horizontal sides of camera view
+            else if ((vp.x < -0.3f || vp.x > 1.3f) && transform.position.y < cam.transform.position.y - 1.5f)
+            {
+                fallen = true;
+            }
+        }
+
+        if (fallen)
+        {
+            Die();
+        }
     }
 
     private void CheckGroundAndFallDamage()
@@ -513,8 +559,13 @@ public class EnemyAI : MonoBehaviour, IDamageable
 
     private void Die()
     {
+        if (isDead) return;
         isDead = true;
-        rb.linearVelocity = Vector2.zero;
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector2.zero;
+            rb.simulated = false;
+        }
         if (col != null) col.enabled = false;
 
         if (animator != null)
@@ -525,7 +576,7 @@ public class EnemyAI : MonoBehaviour, IDamageable
         OnAnyEnemyDied?.Invoke(this);
 
         // Destroy after death animations complete
-        Destroy(gameObject, 1.5f);
+        Destroy(gameObject, 1.2f);
     }
 
     private void OnDrawGizmosSelected()

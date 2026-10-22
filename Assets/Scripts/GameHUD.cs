@@ -142,10 +142,10 @@ public class GameHUD : MonoBehaviour
         int aliveEnemies = EnemyAI.GetAliveEnemyCount();
         string statusText = aliveEnemies > 0 
             ? $"{levelTitle}  |  ENEMIES: {aliveEnemies}" 
-            : $"{levelTitle}  |  DOOR UNLOCKED!";
+            : $"{levelTitle}  |  DOOR OPEN! [PRESS X]";
 
         float screenW = Screen.width;
-        float headerW = 280f;
+        float headerW = 320f;
         float headerH = 34f;
         Rect headerRect = new Rect(screenW - headerW - 20f, 16f, headerW, headerH);
 

@@ -88,6 +88,27 @@ public static class LevelSetupEditor
             }
         });
 
+        // Setup Level 4
+        SetupScene("Assets/Scenes/Level4.unity", scene =>
+        {
+            LevelDoor door = Object.FindAnyObjectByType<LevelDoor>();
+            if (door == null)
+            {
+                LevelSetupUtility.CreateDoorGameObject(new Vector3(7.0f, 15.0f, 0f));
+                EditorSceneManager.MarkSceneDirty(scene);
+                Debug.Log("[LevelSetupEditor] Added LevelDoor to Level4.unity");
+            }
+
+            Level4PlatformController ctrl = Object.FindAnyObjectByType<Level4PlatformController>();
+            if (ctrl == null)
+            {
+                GameObject ctrlGO = new GameObject("Level4PlatformController");
+                ctrl = ctrlGO.AddComponent<Level4PlatformController>();
+                EditorSceneManager.MarkSceneDirty(scene);
+                Debug.Log("[LevelSetupEditor] Added Level4PlatformController to Level4.unity");
+            }
+        });
+
         // Reopen previously active scene if any
         if (!string.IsNullOrEmpty(currentActiveScenePath))
         {

@@ -15,9 +15,9 @@ public class MovingPlatform : MonoBehaviour
     [Tooltip("Pause duration at each end of the movement in seconds")]
     [SerializeField] private float waitTimeAtEnds = 0.15f;
 
-    [Header("Level 3 Restriction")]
-    [Tooltip("Enforce that moving platform logic only executes in Level 3")]
-    [SerializeField] private bool onlyActiveInLevel3 = true;
+    [Header("Level Restriction")]
+    [Tooltip("Enforce that moving platform logic only executes in levels with moving platforms (Level 3, Level 4)")]
+    [SerializeField] private bool onlyActiveInMovingPlatformLevels = true;
 
     // Movement state
     private Vector2 startPosition;
@@ -62,24 +62,24 @@ public class MovingPlatform : MonoBehaviour
         startPosition = rb.position;
         targetPosition = startPosition + moveDirection.normalized * moveDistance;
 
-        // Restriction check: only active in Level 3
-        if (onlyActiveInLevel3)
+        // Restriction check: only active in Level 3 and Level 4
+        if (onlyActiveInMovingPlatformLevels)
         {
             string currentScene = SceneManager.GetActiveScene().name;
-            bool isLevel3 = currentScene.Equals("Level3", System.StringComparison.OrdinalIgnoreCase) 
-                            || currentScene.Contains("3");
-            if (!isLevel3)
+            bool isAllowed = currentScene.Contains("3") || currentScene.Contains("4");
+            if (!isAllowed)
             {
                 enabled = false;
             }
         }
     }
 
-    public void Initialize(Vector2 direction, float distance, float speed)
+    public void Initialize(Vector2 direction, float distance, float speed, float waitTime = 0.15f)
     {
         moveDirection = direction;
         moveDistance = distance;
         moveSpeed = speed;
+        waitTimeAtEnds = waitTime;
         startPosition = transform.position;
         targetPosition = startPosition + moveDirection.normalized * moveDistance;
         movingToTarget = true;
@@ -88,12 +88,11 @@ public class MovingPlatform : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (onlyActiveInLevel3)
+        if (onlyActiveInMovingPlatformLevels)
         {
             string currentScene = SceneManager.GetActiveScene().name;
-            bool isLevel3 = currentScene.Equals("Level3", System.StringComparison.OrdinalIgnoreCase) 
-                            || currentScene.Contains("3");
-            if (!isLevel3) return;
+            bool isAllowed = currentScene.Contains("3") || currentScene.Contains("4");
+            if (!isAllowed) return;
         }
 
         Vector2 currentPos = rb.position;

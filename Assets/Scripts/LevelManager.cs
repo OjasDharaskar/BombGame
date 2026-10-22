@@ -31,6 +31,7 @@ public class LevelManager : MonoBehaviour
     [SerializeField] private string level1Scene = "Leve1";
     [SerializeField] private string level2Scene = "Level2";
     [SerializeField] private string level3Scene = "Level3";
+    [SerializeField] private string level4Scene = "Level4";
 
     [Header("Settings")]
     [SerializeField] private float quickRestartDelay = 0.35f;
@@ -41,6 +42,7 @@ public class LevelManager : MonoBehaviour
     public string Level1Scene => level1Scene;
     public string Level2Scene => level2Scene;
     public string Level3Scene => level3Scene;
+    public string Level4Scene => level4Scene;
 
     private void Awake()
     {
@@ -79,6 +81,11 @@ public class LevelManager : MonoBehaviour
         LoadScene(level3Scene);
     }
 
+    public void LoadLevel4()
+    {
+        LoadScene(level4Scene);
+    }
+
     public void LoadLevel(string sceneName)
     {
         LoadScene(sceneName);
@@ -99,7 +106,12 @@ public class LevelManager : MonoBehaviour
         }
         else if (current.Equals(level3Scene, System.StringComparison.OrdinalIgnoreCase) || current.Contains("3"))
         {
-            // Level 3 is the final level - trigger Game Complete victory!
+            // Transition from Level 3 to Level 4
+            LoadLevel4();
+        }
+        else if (current.Equals(level4Scene, System.StringComparison.OrdinalIgnoreCase) || current.Contains("4"))
+        {
+            // Level 4 is the final level - trigger Game Complete victory!
             GameComplete();
         }
         else

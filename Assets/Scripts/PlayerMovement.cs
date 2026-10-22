@@ -97,6 +97,13 @@ public class PlayerMovement : MonoBehaviour, IDamageable
 
         SetupAudioSources();
         EnsureClipsLoaded();
+
+        // Dynamic fall boundary: Level 4 extends deeper vertically (down to y = -19)
+        string currentScene = SceneManager.GetActiveScene().name;
+        if (currentScene.Contains("4") || currentScene.Equals("Level4", System.StringComparison.OrdinalIgnoreCase))
+        {
+            fallBoundaryY = -24.0f;
+        }
     }
 
     private void SetupAudioSources()

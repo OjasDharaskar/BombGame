@@ -34,6 +34,12 @@ public static class LevelSetupUtility
         {
             EnsureLevel3Platforms();
         }
+
+        // 3. If Level 4, ensure Level4PlatformController exists
+        if (sceneName.Equals("Level4", System.StringComparison.OrdinalIgnoreCase) || sceneName.Contains("4"))
+        {
+            EnsureLevel4Platforms();
+        }
     }
 
     public static LevelDoor EnsureLevelDoor(string sceneName)
@@ -60,6 +66,11 @@ public static class LevelSetupUtility
         {
             // Top-right victory platform exit in Level 3
             spawnPos = new Vector3(11.5f, 4.8f, 0f);
+        }
+        else if (sceneName.Equals("Level4", System.StringComparison.OrdinalIgnoreCase) || sceneName.Contains("4"))
+        {
+            // Top-right exit ledge in Level 4
+            spawnPos = new Vector3(7.0f, 15.0f, 0f);
         }
 
         return CreateDoorGameObject(spawnPos);
@@ -110,6 +121,16 @@ public static class LevelSetupUtility
         {
             GameObject ctrlGO = new GameObject("Level3PlatformController");
             ctrl = ctrlGO.AddComponent<Level3PlatformController>();
+        }
+    }
+
+    public static void EnsureLevel4Platforms()
+    {
+        Level4PlatformController ctrl = Object.FindAnyObjectByType<Level4PlatformController>();
+        if (ctrl == null)
+        {
+            GameObject ctrlGO = new GameObject("Level4PlatformController");
+            ctrl = ctrlGO.AddComponent<Level4PlatformController>();
         }
     }
 }

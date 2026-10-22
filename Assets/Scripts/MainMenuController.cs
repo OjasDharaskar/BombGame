@@ -8,7 +8,7 @@ using UnityEditor;
 public class MainMenuController : MonoBehaviour
 {
     [Header("Menu Options")]
-    [SerializeField] private string[] menuItems = new string[] { "PLAY LEVEL 1", "LEVEL 2", "LEVEL 3", "QUIT GAME" };
+    [SerializeField] private string[] menuItems = new string[] { "PLAY LEVEL 1", "LEVEL 2", "LEVEL 3", "LEVEL 4", "QUIT GAME" };
     [SerializeField] private int selectedIndex = 0;
 
     [Header("Audio Settings")]
@@ -82,6 +82,11 @@ public class MainMenuController : MonoBehaviour
             selectedIndex = 2;
             ExecuteSelection(2);
         }
+        else if (Input.GetKeyDown(KeyCode.Alpha4) || Input.GetKeyDown(KeyCode.Keypad4))
+        {
+            selectedIndex = 3;
+            ExecuteSelection(3);
+        }
     }
 
     public void SelectOption(int index)
@@ -108,6 +113,9 @@ public class MainMenuController : MonoBehaviour
                 StartCoroutine(LoadLevelRoutine("Level3"));
                 break;
             case 3:
+                StartCoroutine(LoadLevelRoutine("Level4"));
+                break;
+            case 4:
                 Debug.Log("[MainMenu] Quitting Game...");
 #if UNITY_EDITOR
                 UnityEditor.EditorApplication.isPlaying = false;
