@@ -65,6 +65,14 @@ public static class LevelSetupEditor
                 EditorSceneManager.MarkSceneDirty(scene);
                 Debug.Log("[LevelSetupEditor] Added LevelDoor to Level2.unity");
             }
+
+            Level2WaterController water = Object.FindAnyObjectByType<Level2WaterController>();
+            if (water == null)
+            {
+                LevelSetupUtility.EnsureLevel2Water();
+                EditorSceneManager.MarkSceneDirty(scene);
+                Debug.Log("[LevelSetupEditor] Added Level2WaterHazard to Level2.unity");
+            }
         });
 
         // Setup Level 3

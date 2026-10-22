@@ -29,13 +29,21 @@ public static class LevelSetupUtility
         // 1. Ensure LevelDoor exists in this level
         EnsureLevelDoor(sceneName);
 
-        // 2. If Level 3, ensure Level3PlatformController exists
+        // 2. If Level 2, ensure Level2WaterController exists
+        if (sceneName.Equals("Level2", System.StringComparison.OrdinalIgnoreCase) 
+            || sceneName.Equals("Leve2", System.StringComparison.OrdinalIgnoreCase) 
+            || (sceneName.Contains("2") && !sceneName.Contains("3") && !sceneName.Contains("4")))
+        {
+            EnsureLevel2Water();
+        }
+
+        // 3. If Level 3, ensure Level3PlatformController exists
         if (sceneName.Equals("Level3", System.StringComparison.OrdinalIgnoreCase) || sceneName.Contains("3"))
         {
             EnsureLevel3Platforms();
         }
 
-        // 3. If Level 4, ensure Level4PlatformController exists
+        // 4. If Level 4, ensure Level4PlatformController exists
         if (sceneName.Equals("Level4", System.StringComparison.OrdinalIgnoreCase) || sceneName.Contains("4"))
         {
             EnsureLevel4Platforms();
@@ -112,6 +120,17 @@ public static class LevelSetupUtility
         // LevelDoor Component
         LevelDoor door = doorGO.AddComponent<LevelDoor>();
         return door;
+    }
+
+    public static Level2WaterController EnsureLevel2Water()
+    {
+        Level2WaterController water = Object.FindAnyObjectByType<Level2WaterController>();
+        if (water == null)
+        {
+            GameObject waterGO = new GameObject("Level2WaterHazard");
+            water = waterGO.AddComponent<Level2WaterController>();
+        }
+        return water;
     }
 
     public static void EnsureLevel3Platforms()
